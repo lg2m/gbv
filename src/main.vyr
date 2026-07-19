@@ -1,0 +1,4 @@
+fn main() -> unit uses {io} {
+  print("gbv bootstrap ok")
+  return ()
+}

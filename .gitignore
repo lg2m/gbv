@@ -1,0 +1,16 @@
+/._build/
+/_build/
+/dist/
+/.direnv/
+/.envrc.local
+/.veyrc-dirlist
+/gbv
+/result
+/result-*
+/.local/
+/roms/
+/saves/
+/snapshots/
+/compatibility/local/
+/testdata/fetched/
+/testdata/local/

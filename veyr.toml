@@ -1,0 +1,4 @@
+[package]
+name = "gbv"
+version = "0.0.1"
+no_vendor = true
