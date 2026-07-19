@@ -1,4 +1,4 @@
-use core.result.{Result}
+use core.result.Result
 
 pub enum HardwareModel {
   dmg
@@ -77,21 +77,17 @@ pub struct PostBootInputs {
 }
 
 impl PostBootInputs {
-  pub fn header_checksum_byte(self: ref PostBootInputs) -> uint8 {
-    return self.header_checksum_byte
-  }
+  pub fn header_checksum_byte(self: ref PostBootInputs) -> uint8 =
+  self.header_checksum_byte
 
-  pub fn is_nintendo_licensee(self: ref PostBootInputs) -> bool {
-    return self.is_nintendo_licensee
-  }
+  pub fn is_nintendo_licensee(self: ref PostBootInputs) -> bool =
+  self.is_nintendo_licensee
 
-  pub fn title_byte_sum(self: ref PostBootInputs) -> uint8 {
-    return self.title_byte_sum
-  }
+  pub fn title_byte_sum(self: ref PostBootInputs) -> uint8 =
+  self.title_byte_sum
 
-  pub fn cgb_compatibility_boot_input(self: ref PostBootInputs) -> CgbCompatibilityBootInput {
-    return self.cgb_compatibility_boot_input
-  }
+  pub fn cgb_compatibility_boot_input(self: ref PostBootInputs) -> CgbCompatibilityBootInput =
+  self.cgb_compatibility_boot_input
 }
 
 // Hardware Profile is deliberately limited to physical model, SoC revision,
@@ -112,17 +108,14 @@ enum ProfileIdentity {
 }
 
 impl HardwareProfile {
-  pub fn model(self: ref HardwareProfile) -> HardwareModel {
-    return self.model
-  }
+  pub fn model(self: ref HardwareProfile) -> HardwareModel =
+  self.model
 
-  pub fn revision(self: ref HardwareProfile) -> HardwareRevision {
-    return self.revision
-  }
+  pub fn revision(self: ref HardwareProfile) -> HardwareRevision =
+  self.revision
 
-  pub fn mode(self: ref HardwareProfile) -> OperatingMode {
-    return self.mode
-  }
+  pub fn mode(self: ref HardwareProfile) -> OperatingMode =
+  self.mode
 
   fn identity(self: ref HardwareProfile) -> ProfileIdentity {
     match self.revision {
@@ -162,17 +155,14 @@ pub struct BootRomContract {
 }
 
 impl BootRomContract {
-  pub fn program_counter(self: ref BootRomContract) -> uint16 {
-    return self.program_counter
-  }
+  pub fn program_counter(self: ref BootRomContract) -> uint16 =
+  self.program_counter
 
-  pub fn is_boot_rom_mapped(self: ref BootRomContract) -> bool {
-    return self.is_boot_rom_mapped
-  }
+  pub fn is_boot_rom_mapped(self: ref BootRomContract) -> bool =
+  self.is_boot_rom_mapped
 
-  pub fn layout(self: ref BootRomContract) -> BootRomLayout {
-    return self.layout
-  }
+  pub fn layout(self: ref BootRomContract) -> BootRomLayout =
+  self.layout
 }
 
 @derive(Copy, Equal)
@@ -186,29 +176,23 @@ pub struct PostBootCpuRegisters {
 }
 
 impl PostBootCpuRegisters {
-  pub fn af(self: ref PostBootCpuRegisters) -> uint16 {
-    return self.af
-  }
+  pub fn af(self: ref PostBootCpuRegisters) -> uint16 =
+  self.af
 
-  pub fn bc(self: ref PostBootCpuRegisters) -> uint16 {
-    return self.bc
-  }
+  pub fn bc(self: ref PostBootCpuRegisters) -> uint16 =
+  self.bc
 
-  pub fn de(self: ref PostBootCpuRegisters) -> uint16 {
-    return self.de
-  }
+  pub fn de(self: ref PostBootCpuRegisters) -> uint16 =
+  self.de
 
-  pub fn hl(self: ref PostBootCpuRegisters) -> uint16 {
-    return self.hl
-  }
+  pub fn hl(self: ref PostBootCpuRegisters) -> uint16 =
+  self.hl
 
-  pub fn program_counter(self: ref PostBootCpuRegisters) -> uint16 {
-    return self.program_counter
-  }
+  pub fn program_counter(self: ref PostBootCpuRegisters) -> uint16 =
+  self.program_counter
 
-  pub fn stack_pointer(self: ref PostBootCpuRegisters) -> uint16 {
-    return self.stack_pointer
-  }
+  pub fn stack_pointer(self: ref PostBootCpuRegisters) -> uint16 =
+  self.stack_pointer
 }
 
 @derive(Copy, Equal)
@@ -220,29 +204,23 @@ pub struct PostBootContract {
 }
 
 impl PostBootContract {
-  pub fn cpu_registers(self: ref PostBootContract) -> PostBootCpuRegisters {
-    return self.cpu_registers
-  }
+  pub fn cpu_registers(self: ref PostBootContract) -> PostBootCpuRegisters =
+  self.cpu_registers
 
-  pub fn program_counter(self: ref PostBootContract) -> uint16 {
-    return self.cpu_registers.program_counter()
-  }
+  pub fn program_counter(self: ref PostBootContract) -> uint16 =
+  self.cpu_registers.program_counter()
 
-  pub fn stack_pointer(self: ref PostBootContract) -> uint16 {
-    return self.cpu_registers.stack_pointer()
-  }
+  pub fn stack_pointer(self: ref PostBootContract) -> uint16 =
+  self.cpu_registers.stack_pointer()
 
-  pub fn is_boot_rom_mapped(self: ref PostBootContract) -> bool {
-    return self.is_boot_rom_mapped
-  }
+  pub fn is_boot_rom_mapped(self: ref PostBootContract) -> bool =
+  self.is_boot_rom_mapped
 
-  pub fn provenance(self: ref PostBootContract) -> PostBootStateProvenance {
-    return self.provenance
-  }
+  pub fn provenance(self: ref PostBootContract) -> PostBootStateProvenance =
+  self.provenance
 
-  pub fn cgb_compatibility_boot_input(self: ref PostBootContract) -> CgbCompatibilityBootInput {
-    return self.cgb_compatibility_boot_input
-  }
+  pub fn cgb_compatibility_boot_input(self: ref PostBootContract) -> CgbCompatibilityBootInput =
+  self.cgb_compatibility_boot_input
 }
 
 @derive(Copy, Equal)
@@ -252,13 +230,11 @@ pub struct RunConfiguration {
 }
 
 impl RunConfiguration {
-  pub fn hardware_profile(self: ref RunConfiguration) -> HardwareProfile {
-    return self.hardware_profile
-  }
+  pub fn hardware_profile(self: ref RunConfiguration) -> HardwareProfile =
+  self.hardware_profile
 
-  pub fn boot_policy(self: ref RunConfiguration) -> BootPolicy {
-    return self.boot_policy
-  }
+  pub fn boot_policy(self: ref RunConfiguration) -> BootPolicy =
+  self.boot_policy
 }
 
 pub fn boot_policy_id(policy: BootPolicy) -> str {
@@ -286,12 +262,11 @@ pub fn boot_rom_layout(profile: HardwareProfile) -> BootRomLayout {
   }
 }
 
-pub fn boot_rom_contract(profile: HardwareProfile) -> BootRomContract {
-  return BootRomContract {
-    program_counter: 0x0000,
-    is_boot_rom_mapped: true,
-    layout: boot_rom_layout(profile)
-  }
+pub fn boot_rom_contract(profile: HardwareProfile) -> BootRomContract =
+BootRomContract {
+  program_counter: 0x0000,
+  is_boot_rom_mapped: true,
+  layout: boot_rom_layout(profile)
 }
 
 pub fn hardware_profile(
@@ -341,13 +316,11 @@ pub fn post_boot_inputs(
   is_nintendo_licensee: bool,
   title_byte_sum: uint8,
   cgb_compatibility_boot_input: CgbCompatibilityBootInput
-) -> PostBootInputs {
-  return PostBootInputs {
-    header_checksum_byte: header_checksum_byte,
-    is_nintendo_licensee: is_nintendo_licensee,
-    title_byte_sum: title_byte_sum,
-    cgb_compatibility_boot_input: cgb_compatibility_boot_input
-  }
+) -> PostBootInputs = PostBootInputs {
+  header_checksum_byte: header_checksum_byte,
+  is_nintendo_licensee: is_nintendo_licensee,
+  title_byte_sum: title_byte_sum,
+  cgb_compatibility_boot_input: cgb_compatibility_boot_input
 }
 
 fn post_boot_cpu_registers(
@@ -355,15 +328,13 @@ fn post_boot_cpu_registers(
   bc: uint16,
   de: uint16,
   hl: uint16
-) -> PostBootCpuRegisters {
-  return PostBootCpuRegisters {
-    af: af,
-    bc: bc,
-    de: de,
-    hl: hl,
-    program_counter: 0x0100,
-    stack_pointer: 0xfffe
-  }
+) -> PostBootCpuRegisters = PostBootCpuRegisters {
+  af: af,
+  bc: bc,
+  de: de,
+  hl: hl,
+  program_counter: 0x0100,
+  stack_pointer: 0xfffe
 }
 
 pub fn post_boot_contract(
@@ -428,11 +399,9 @@ pub fn post_boot_contract(
 pub fn run_configuration(
   hardware_profile: HardwareProfile,
   boot_policy: BootPolicy
-) -> RunConfiguration {
-  return RunConfiguration {
-    hardware_profile: hardware_profile,
-    boot_policy: boot_policy
-  }
+) -> RunConfiguration = RunConfiguration {
+  hardware_profile: hardware_profile,
+  boot_policy: boot_policy
 }
 
 pub fn select_boot_policy(
