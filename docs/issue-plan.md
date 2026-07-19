@@ -136,7 +136,7 @@ Each numbered tracer slice produces an observable end-to-end result and can be a
     - Complete when header controller/capability parsing, image/RAM validation, ROM-only routing, diagnostics, and a public homebrew smoke pass.
 
 21. **K02 — Run MBC1/MBC1M software with crash-safe Save Data**
-   - Blocked by: K02.
+   - Blocked by: K01.
     - Covers: U3, U4, U5.
     - Complete when MBC1 banking, forbidden aliases, structural MBC1M detection or explicit override, Persistence Record validation, and interrupted-write recovery pass.
 
