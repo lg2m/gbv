@@ -6,9 +6,13 @@ Non-obvious hardware behavior should cite the strongest available source near th
 
 - [Game Boy: Complete Technical Reference](https://gekkio.fi/files/gb-docs/gbctr.pdf)
 - [Pan Docs](https://gbdev.io/pandocs/)
+- [Pan Docs power-up and boot handoff](https://gbdev.io/pandocs/Power_Up_Sequence.html)
+- [Pan Docs cartridge CGB flag](https://gbdev.io/pandocs/The_Cartridge_Header.html#0143--cgb-flag)
 - [RGBDS SM83 instruction reference](https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7)
 - [gb-opcodes structured opcode data](https://gbdev.io/gb-opcodes/Opcodes.json)
 - [Game Boy hardware database](https://gbhwdb.gekkio.fi/)
+- [DMG-C reference unit GM6058180](https://gbhwdb.gekkio.fi/consoles/dmg/GM6058180.html)
+- [CGB-D reference unit CH20983903](https://gbhwdb.gekkio.fi/consoles/cgb/CH20983903.html)
 
 ## Public test suites
 

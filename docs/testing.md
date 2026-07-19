@@ -6,6 +6,7 @@
 
 Colocated Veyr tests exercise pure or tightly bounded state transitions without running a ROM Image:
 
+- Hardware Profile selection, cartridge/mode compatibility, and Boot Policy validation;
 - exhaustive arithmetic/flag combinations, including `DAA` and signed `SP+e8`;
 - opcode metadata completeness and decode classification;
 - cartridge header, checksum, size, and malformed-input handling;

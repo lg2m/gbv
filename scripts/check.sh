@@ -5,7 +5,8 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-veyr fmt --check src/main.vyr
+veyr fmt --check .
+veyr test . --seed 638 --jobs 1
 nixpkgs-fmt --check flake.nix nix/*.nix
 shellcheck scripts/*.sh
 

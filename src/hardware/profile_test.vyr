@@ -1,0 +1,386 @@
+use core.testing.expect
+
+test "selects_dmg_c_native_for_dmg_software" {
+  match select_hardware_profile("dmg-c", "dmg", CartridgeMode.dmg) {
+    Ok(profile) => {
+      expect.equal(profile.model(), HardwareModel.dmg)
+      expect.equal(profile.revision(), HardwareRevision.dmg_c)
+      expect.equal(profile.mode(), OperatingMode.dmg)
+      expect.equal(profile.stable_id(), "dmg-c/dmg")
+    }
+    Err(_) => {
+      expect.fail("valid DMG-C profile was rejected")
+    }
+  }
+}
+
+test "selects_cgb_d_native_for_cgb_software" {
+  match select_hardware_profile("cgb-d", "cgb", CartridgeMode.cgb_only) {
+    Ok(profile) => {
+      expect.equal(profile.model(), HardwareModel.cgb)
+      expect.equal(profile.revision(), HardwareRevision.cgb_d)
+      expect.equal(profile.mode(), OperatingMode.cgb)
+      expect.equal(profile.stable_id(), "cgb-d/cgb")
+    }
+    Err(_) => {
+      expect.fail("valid CGB-D profile was rejected")
+    }
+  }
+}
+
+test "selects_cgb_d_compatibility_for_dmg_software" {
+  match select_hardware_profile("cgb-d", "dmg-compat", CartridgeMode.dmg) {
+    Ok(profile) => {
+      expect.equal(profile.model(), HardwareModel.cgb)
+      expect.equal(profile.revision(), HardwareRevision.cgb_d)
+      expect.equal(profile.mode(), OperatingMode.cgb_dmg_compat)
+      expect.equal(profile.stable_id(), "cgb-d/dmg-compat")
+    }
+    Err(_) => {
+      expect.fail("valid CGB-D compatibility profile was rejected")
+    }
+  }
+}
+
+test "accepts_dual_mode_software_on_dmg_c" {
+  expect.ok(select_hardware_profile("dmg-c", "dmg", CartridgeMode.cgb_compatible))
+}
+
+test "accepts_dual_mode_software_in_native_cgb_mode" {
+  expect.ok(select_hardware_profile("cgb-d", "cgb", CartridgeMode.cgb_compatible))
+}
+
+test "rejects_omitted_hardware_profile" {
+  match select_hardware_profile("", "dmg", CartridgeMode.dmg) {
+    Ok(_) => {
+      expect.fail("omitted profile was accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.missing_profile)
+    }
+  }
+}
+
+test "rejects_unknown_hardware_profile" {
+  match select_hardware_profile("generic", "dmg", CartridgeMode.dmg) {
+    Ok(_) => {
+      expect.fail("unknown profile was accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.unknown_profile)
+    }
+  }
+}
+
+test "rejects_omitted_operating_mode" {
+  match select_hardware_profile("dmg-c", "", CartridgeMode.dmg) {
+    Ok(_) => {
+      expect.fail("omitted mode was accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.missing_mode)
+    }
+  }
+}
+
+test "rejects_unknown_operating_mode" {
+  match select_hardware_profile("dmg-c", "automatic", CartridgeMode.dmg) {
+    Ok(_) => {
+      expect.fail("unknown mode was accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.unknown_mode)
+    }
+  }
+}
+
+test "rejects_mode_not_supported_by_physical_profile" {
+  match select_hardware_profile("dmg-c", "cgb", CartridgeMode.dmg) {
+    Ok(_) => {
+      expect.fail("incompatible model and mode were accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.incompatible_model_mode)
+    }
+  }
+}
+
+test "rejects_revision_not_supported_by_physical_model" {
+  match hardware_profile(
+    HardwareModel.dmg,
+    HardwareRevision.cgb_d,
+    OperatingMode.dmg,
+    CartridgeMode.dmg
+  ) {
+    Ok(_) => {
+      expect.fail("incompatible model and revision were accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.incompatible_model_revision)
+    }
+  }
+}
+
+test "rejects_dmg_revision_on_cgb_model" {
+  match hardware_profile(
+    HardwareModel.cgb,
+    HardwareRevision.dmg_c,
+    OperatingMode.cgb,
+    CartridgeMode.cgb_only
+  ) {
+    Ok(_) => {
+      expect.fail("DMG revision was accepted on the CGB model")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.incompatible_model_revision)
+    }
+  }
+}
+
+test "rejects_cgb_only_software_on_dmg_c" {
+  match select_hardware_profile("dmg-c", "dmg", CartridgeMode.cgb_only) {
+    Ok(_) => {
+      expect.fail("CGB-only software was accepted on DMG-C")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.incompatible_cartridge_mode)
+    }
+  }
+}
+
+test "rejects_dmg_only_software_in_native_cgb_mode" {
+  match select_hardware_profile("cgb-d", "cgb", CartridgeMode.dmg) {
+    Ok(_) => {
+      expect.fail("DMG-only software was accepted in native CGB mode")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.incompatible_cartridge_mode)
+    }
+  }
+}
+
+test "rejects_dual_mode_software_forced_into_cgb_dmg_compatibility" {
+  match select_hardware_profile("cgb-d", "dmg-compat", CartridgeMode.cgb_compatible) {
+    Ok(_) => {
+      expect.fail("bit-7 CGB software was forced into DMG compatibility mode")
+    }
+    Err(reason) => {
+      expect.equal(reason, ProfileSelectionError.incompatible_cartridge_mode)
+    }
+  }
+}
+
+test "selects_user_supplied_boot_rom_policy" {
+  match select_boot_policy("boot-rom") {
+    Ok(policy) => {
+      expect.equal(policy, BootPolicy.user_boot_rom)
+      expect.equal(boot_policy_id(policy), "boot-rom")
+    }
+    Err(_) => {
+      expect.fail("user Boot ROM policy was rejected")
+    }
+  }
+}
+
+test "selects_documented_post_boot_start_policy" {
+  match select_boot_policy("post-boot-start") {
+    Ok(policy) => {
+      expect.equal(policy, BootPolicy.post_boot_start)
+      expect.equal(boot_policy_id(policy), "post-boot-start")
+    }
+    Err(_) => {
+      expect.fail("Post-boot Start policy was rejected")
+    }
+  }
+}
+
+test "rejects_omitted_boot_policy" {
+  match select_boot_policy("") {
+    Ok(_) => {
+      expect.fail("omitted Boot Policy was accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, BootPolicySelectionError.missing_policy)
+    }
+  }
+}
+
+test "rejects_unknown_boot_policy" {
+  match select_boot_policy("automatic") {
+    Ok(_) => {
+      expect.fail("unknown Boot Policy was accepted")
+    }
+    Err(reason) => {
+      expect.equal(reason, BootPolicySelectionError.unknown_policy)
+    }
+  }
+}
+
+test "selects_dmg_boot_rom_layout_for_dmg_c" {
+  match select_hardware_profile("dmg-c", "dmg", CartridgeMode.dmg) {
+    Ok(profile) => {
+      expect.equal(boot_rom_layout(profile), BootRomLayout.dmg_256)
+    }
+    Err(_) => {
+      expect.fail("valid DMG-C profile was rejected")
+    }
+  }
+}
+
+test "selects_cgb_boot_rom_layout_for_cgb_d" {
+  match select_hardware_profile("cgb-d", "cgb", CartridgeMode.cgb_only) {
+    Ok(profile) => {
+      expect.equal(boot_rom_layout(profile), BootRomLayout.cgb_addressed_2304)
+    }
+    Err(_) => {
+      expect.fail("valid CGB-D profile was rejected")
+    }
+  }
+}
+
+test "selects_dmg_c_post_boot_contract" {
+  match select_hardware_profile("dmg-c", "dmg", CartridgeMode.dmg) {
+    Ok(profile) => {
+      let inputs = post_boot_inputs(
+        0x00 as uint8,
+        false,
+        0x00 as uint8,
+        CgbCompatibilityBootInput.none_held
+      )
+      let contract = post_boot_contract(profile, inputs)
+      let cpu = contract.cpu_registers()
+      expect.equal(contract.program_counter(), 0x0100 as uint16)
+      expect.equal(contract.stack_pointer(), 0xfffe as uint16)
+      expect.equal(contract.is_boot_rom_mapped(), false)
+      expect.equal(cpu.af(), 0x0180 as uint16)
+      expect.equal(cpu.bc(), 0x0013 as uint16)
+      expect.equal(cpu.de(), 0x00d8 as uint16)
+      expect.equal(cpu.hl(), 0x014d as uint16)
+      expect.equal(contract.provenance(), PostBootStateProvenance.pan_docs_dmg_handoff)
+    }
+    Err(_) => {
+      expect.fail("valid DMG-C profile was rejected")
+    }
+  }
+}
+
+test "derives_dmg_c_flags_from_nonzero_header_checksum" {
+  match select_hardware_profile("dmg-c", "dmg", CartridgeMode.dmg) {
+    Ok(profile) => {
+      let inputs = post_boot_inputs(
+        0x01 as uint8,
+        false,
+        0x00 as uint8,
+        CgbCompatibilityBootInput.none_held
+      )
+      expect.equal(
+        post_boot_contract(profile, inputs).cpu_registers().af(),
+        0x01b0 as uint16
+      )
+    }
+    Err(_) => {
+      expect.fail("valid DMG-C profile was rejected")
+    }
+  }
+}
+
+test "selects_cgb_d_native_post_boot_state" {
+  match select_hardware_profile("cgb-d", "cgb", CartridgeMode.cgb_only) {
+    Ok(profile) => {
+      let inputs = post_boot_inputs(
+        0x00 as uint8,
+        false,
+        0x00 as uint8,
+        CgbCompatibilityBootInput.none_held
+      )
+      let contract = post_boot_contract(profile, inputs)
+      let cpu = contract.cpu_registers()
+      expect.equal(cpu.af(), 0x1180 as uint16)
+      expect.equal(cpu.bc(), 0x0000 as uint16)
+      expect.equal(cpu.de(), 0xff56 as uint16)
+      expect.equal(cpu.hl(), 0x000d as uint16)
+      expect.equal(contract.provenance(), PostBootStateProvenance.pan_docs_cgb_handoff)
+    }
+    Err(_) => {
+      expect.fail("valid CGB-D profile was rejected")
+    }
+  }
+}
+
+test "selects_cgb_d_compatibility_post_boot_state" {
+  match select_hardware_profile("cgb-d", "dmg-compat", CartridgeMode.dmg) {
+    Ok(profile) => {
+      let inputs = post_boot_inputs(
+        0x00 as uint8,
+        true,
+        0x43 as uint8,
+        CgbCompatibilityBootInput.none_held
+      )
+      let contract = post_boot_contract(profile, inputs)
+      let cpu = contract.cpu_registers()
+      expect.equal(cpu.af(), 0x1180 as uint16)
+      expect.equal(cpu.bc(), 0x4300 as uint16)
+      expect.equal(cpu.de(), 0x0008 as uint16)
+      expect.equal(cpu.hl(), 0x991a as uint16)
+      expect.equal(
+        contract.provenance(),
+        PostBootStateProvenance.pan_docs_cgb_compat_handoff
+      )
+      expect.equal(
+        contract.cgb_compatibility_boot_input(),
+        CgbCompatibilityBootInput.none_held
+      )
+    }
+    Err(_) => {
+      expect.fail("valid CGB-D compatibility profile was rejected")
+    }
+  }
+}
+
+test "derives_cgb_compatibility_state_for_non_nintendo_header" {
+  match select_hardware_profile("cgb-d", "dmg-compat", CartridgeMode.dmg) {
+    Ok(profile) => {
+      let inputs = post_boot_inputs(
+        0x00 as uint8,
+        false,
+        0x43 as uint8,
+        CgbCompatibilityBootInput.none_held
+      )
+      let cpu = post_boot_contract(profile, inputs).cpu_registers()
+      expect.equal(cpu.bc(), 0x0000 as uint16)
+      expect.equal(cpu.hl(), 0x007c as uint16)
+    }
+    Err(_) => {
+      expect.fail("valid CGB-D compatibility profile was rejected")
+    }
+  }
+}
+
+test "keeps_boot_policy_separate_from_hardware_profile" {
+  match select_hardware_profile("dmg-c", "dmg", CartridgeMode.dmg) {
+    Ok(profile) => {
+      let booted = run_configuration(profile, BootPolicy.user_boot_rom)
+      let post_boot = run_configuration(profile, BootPolicy.post_boot_start)
+      expect.equal(booted.hardware_profile(), post_boot.hardware_profile())
+      expect.equal(booted.boot_policy(), BootPolicy.user_boot_rom)
+      expect.equal(post_boot.boot_policy(), BootPolicy.post_boot_start)
+    }
+    Err(_) => {
+      expect.fail("valid DMG-C profile was rejected")
+    }
+  }
+}
+
+test "starts_user_boot_rom_at_power_on_entry" {
+  match select_hardware_profile("dmg-c", "dmg", CartridgeMode.dmg) {
+    Ok(profile) => {
+      let contract = boot_rom_contract(profile)
+      expect.equal(contract.program_counter(), 0x0000 as uint16)
+      expect.equal(contract.is_boot_rom_mapped(), true)
+      expect.equal(contract.layout(), BootRomLayout.dmg_256)
+    }
+    Err(_) => {
+      expect.fail("valid DMG-C profile was rejected")
+    }
+  }
+}

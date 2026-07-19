@@ -1,0 +1,518 @@
+use core.result.{Result}
+
+pub enum HardwareModel {
+  dmg
+  cgb
+}
+
+pub enum HardwareRevision {
+  dmg_c
+  cgb_d
+}
+
+pub enum OperatingMode {
+  dmg
+  cgb
+  cgb_dmg_compat
+}
+
+// The normalized meaning of the CGB flag in cartridge header byte 0x0143.
+pub enum CartridgeMode {
+  dmg
+  cgb_compatible
+  cgb_only
+}
+
+// Boot Policy is run configuration, never part of physical hardware identity.
+pub enum BootPolicy {
+  user_boot_rom
+  post_boot_start
+}
+
+// The CGB representation is address-shaped: only 0x0000-0x00ff and
+// 0x0200-0x08ff are mapped by hardware; the file-format gap is never mapped.
+pub enum BootRomLayout {
+  dmg_256
+  cgb_addressed_2304
+}
+
+// Post-boot Start supports one explicit input convention initially. Additional
+// button combinations require their own deterministic state contract.
+pub enum CgbCompatibilityBootInput {
+  none_held
+}
+
+// Each variant names the owning public handoff table. Exact citations and
+// hardware-derived tests are recorded in docs/hardware-models.md.
+pub enum PostBootStateProvenance {
+  pan_docs_dmg_handoff
+  pan_docs_cgb_handoff
+  pan_docs_cgb_compat_handoff
+}
+
+pub error BootPolicySelectionError {
+  missing_policy,
+  unknown_policy
+}
+
+pub error ProfileSelectionError {
+  missing_profile,
+  unknown_profile,
+  missing_mode,
+  unknown_mode,
+  incompatible_model_revision,
+  incompatible_model_mode,
+  incompatible_cartridge_mode
+}
+
+// Header-derived values are explicit inputs so Post-boot Start never invents a
+// universal CGB compatibility state. The cartridge parser will own derivation
+// of the Nintendo-licensee predicate and 16-byte title sum.
+@derive(Copy, Equal)
+pub struct PostBootInputs {
+  header_checksum_byte: uint8,
+  is_nintendo_licensee: bool,
+  title_byte_sum: uint8,
+  cgb_compatibility_boot_input: CgbCompatibilityBootInput
+}
+
+impl PostBootInputs {
+  pub fn header_checksum_byte(self: ref PostBootInputs) -> uint8 {
+    return self.header_checksum_byte
+  }
+
+  pub fn is_nintendo_licensee(self: ref PostBootInputs) -> bool {
+    return self.is_nintendo_licensee
+  }
+
+  pub fn title_byte_sum(self: ref PostBootInputs) -> uint8 {
+    return self.title_byte_sum
+  }
+
+  pub fn cgb_compatibility_boot_input(self: ref PostBootInputs) -> CgbCompatibilityBootInput {
+    return self.cgb_compatibility_boot_input
+  }
+}
+
+// Hardware Profile is deliberately limited to physical model, SoC revision,
+// and operating mode. Every value is created through a validating constructor.
+@derive(Copy, Equal)
+pub struct HardwareProfile {
+  model: HardwareModel,
+  revision: HardwareRevision,
+  mode: OperatingMode
+}
+
+// This private identity centralizes all facts derived from a validated profile.
+// HardwareProfile itself remains exactly model + revision + operating mode.
+enum ProfileIdentity {
+  dmg_c_dmg
+  cgb_d_cgb
+  cgb_d_dmg_compat
+}
+
+impl HardwareProfile {
+  pub fn model(self: ref HardwareProfile) -> HardwareModel {
+    return self.model
+  }
+
+  pub fn revision(self: ref HardwareProfile) -> HardwareRevision {
+    return self.revision
+  }
+
+  pub fn mode(self: ref HardwareProfile) -> OperatingMode {
+    return self.mode
+  }
+
+  fn identity(self: ref HardwareProfile) -> ProfileIdentity {
+    match self.revision {
+      HardwareRevision.dmg_c => {
+        return ProfileIdentity.dmg_c_dmg
+      }
+      HardwareRevision.cgb_d => {
+        if self.mode == OperatingMode.cgb {
+          return ProfileIdentity.cgb_d_cgb
+        }
+        return ProfileIdentity.cgb_d_dmg_compat
+      }
+    }
+  }
+
+  // Stable IDs are recorded by tests, traces, and Compatibility Reports.
+  pub fn stable_id(self: ref HardwareProfile) -> str {
+    match self.identity() {
+      ProfileIdentity.dmg_c_dmg => {
+        return "dmg-c/dmg"
+      }
+      ProfileIdentity.cgb_d_cgb => {
+        return "cgb-d/cgb"
+      }
+      ProfileIdentity.cgb_d_dmg_compat => {
+        return "cgb-d/dmg-compat"
+      }
+    }
+  }
+}
+
+@derive(Copy, Equal)
+pub struct BootRomContract {
+  program_counter: uint16,
+  is_boot_rom_mapped: bool,
+  layout: BootRomLayout
+}
+
+impl BootRomContract {
+  pub fn program_counter(self: ref BootRomContract) -> uint16 {
+    return self.program_counter
+  }
+
+  pub fn is_boot_rom_mapped(self: ref BootRomContract) -> bool {
+    return self.is_boot_rom_mapped
+  }
+
+  pub fn layout(self: ref BootRomContract) -> BootRomLayout {
+    return self.layout
+  }
+}
+
+@derive(Copy, Equal)
+pub struct PostBootCpuRegisters {
+  af: uint16,
+  bc: uint16,
+  de: uint16,
+  hl: uint16,
+  program_counter: uint16,
+  stack_pointer: uint16
+}
+
+impl PostBootCpuRegisters {
+  pub fn af(self: ref PostBootCpuRegisters) -> uint16 {
+    return self.af
+  }
+
+  pub fn bc(self: ref PostBootCpuRegisters) -> uint16 {
+    return self.bc
+  }
+
+  pub fn de(self: ref PostBootCpuRegisters) -> uint16 {
+    return self.de
+  }
+
+  pub fn hl(self: ref PostBootCpuRegisters) -> uint16 {
+    return self.hl
+  }
+
+  pub fn program_counter(self: ref PostBootCpuRegisters) -> uint16 {
+    return self.program_counter
+  }
+
+  pub fn stack_pointer(self: ref PostBootCpuRegisters) -> uint16 {
+    return self.stack_pointer
+  }
+}
+
+@derive(Copy, Equal)
+pub struct PostBootContract {
+  cpu_registers: PostBootCpuRegisters,
+  is_boot_rom_mapped: bool,
+  provenance: PostBootStateProvenance,
+  cgb_compatibility_boot_input: CgbCompatibilityBootInput
+}
+
+impl PostBootContract {
+  pub fn cpu_registers(self: ref PostBootContract) -> PostBootCpuRegisters {
+    return self.cpu_registers
+  }
+
+  pub fn program_counter(self: ref PostBootContract) -> uint16 {
+    return self.cpu_registers.program_counter()
+  }
+
+  pub fn stack_pointer(self: ref PostBootContract) -> uint16 {
+    return self.cpu_registers.stack_pointer()
+  }
+
+  pub fn is_boot_rom_mapped(self: ref PostBootContract) -> bool {
+    return self.is_boot_rom_mapped
+  }
+
+  pub fn provenance(self: ref PostBootContract) -> PostBootStateProvenance {
+    return self.provenance
+  }
+
+  pub fn cgb_compatibility_boot_input(self: ref PostBootContract) -> CgbCompatibilityBootInput {
+    return self.cgb_compatibility_boot_input
+  }
+}
+
+@derive(Copy, Equal)
+pub struct RunConfiguration {
+  hardware_profile: HardwareProfile,
+  boot_policy: BootPolicy
+}
+
+impl RunConfiguration {
+  pub fn hardware_profile(self: ref RunConfiguration) -> HardwareProfile {
+    return self.hardware_profile
+  }
+
+  pub fn boot_policy(self: ref RunConfiguration) -> BootPolicy {
+    return self.boot_policy
+  }
+}
+
+pub fn boot_policy_id(policy: BootPolicy) -> str {
+  match policy {
+    BootPolicy.user_boot_rom => {
+      return "boot-rom"
+    }
+    BootPolicy.post_boot_start => {
+      return "post-boot-start"
+    }
+  }
+}
+
+pub fn boot_rom_layout(profile: HardwareProfile) -> BootRomLayout {
+  match profile.identity() {
+    ProfileIdentity.dmg_c_dmg => {
+      return BootRomLayout.dmg_256
+    }
+    ProfileIdentity.cgb_d_cgb => {
+      return BootRomLayout.cgb_addressed_2304
+    }
+    ProfileIdentity.cgb_d_dmg_compat => {
+      return BootRomLayout.cgb_addressed_2304
+    }
+  }
+}
+
+pub fn boot_rom_contract(profile: HardwareProfile) -> BootRomContract {
+  return BootRomContract {
+    program_counter: 0x0000,
+    is_boot_rom_mapped: true,
+    layout: boot_rom_layout(profile)
+  }
+}
+
+pub fn hardware_profile(
+  model: HardwareModel,
+  revision: HardwareRevision,
+  mode: OperatingMode,
+  cartridge_mode: CartridgeMode
+) -> Result[HardwareProfile, ProfileSelectionError] {
+  if model == HardwareModel.dmg {
+    if revision != HardwareRevision.dmg_c {
+      return Err(ProfileSelectionError.incompatible_model_revision)
+    }
+    if mode != OperatingMode.dmg {
+      return Err(ProfileSelectionError.incompatible_model_mode)
+    }
+    if cartridge_mode == CartridgeMode.cgb_only {
+      return Err(ProfileSelectionError.incompatible_cartridge_mode)
+    }
+    return Ok(HardwareProfile {
+        model: model,
+        revision: revision,
+        mode: mode
+    })
+  }
+
+  if revision != HardwareRevision.cgb_d {
+    return Err(ProfileSelectionError.incompatible_model_revision)
+  }
+  if mode == OperatingMode.dmg {
+    return Err(ProfileSelectionError.incompatible_model_mode)
+  }
+  if mode == OperatingMode.cgb && cartridge_mode == CartridgeMode.dmg {
+    return Err(ProfileSelectionError.incompatible_cartridge_mode)
+  }
+  if mode == OperatingMode.cgb_dmg_compat && cartridge_mode != CartridgeMode.dmg {
+    return Err(ProfileSelectionError.incompatible_cartridge_mode)
+  }
+  return Ok(HardwareProfile {
+      model: model,
+      revision: revision,
+      mode: mode
+  })
+}
+
+pub fn post_boot_inputs(
+  header_checksum_byte: uint8,
+  is_nintendo_licensee: bool,
+  title_byte_sum: uint8,
+  cgb_compatibility_boot_input: CgbCompatibilityBootInput
+) -> PostBootInputs {
+  return PostBootInputs {
+    header_checksum_byte: header_checksum_byte,
+    is_nintendo_licensee: is_nintendo_licensee,
+    title_byte_sum: title_byte_sum,
+    cgb_compatibility_boot_input: cgb_compatibility_boot_input
+  }
+}
+
+fn post_boot_cpu_registers(
+  af: uint16,
+  bc: uint16,
+  de: uint16,
+  hl: uint16
+) -> PostBootCpuRegisters {
+  return PostBootCpuRegisters {
+    af: af,
+    bc: bc,
+    de: de,
+    hl: hl,
+    program_counter: 0x0100,
+    stack_pointer: 0xfffe
+  }
+}
+
+pub fn post_boot_contract(
+  profile: HardwareProfile,
+  inputs: PostBootInputs
+) -> PostBootContract {
+  match profile.identity() {
+    ProfileIdentity.dmg_c_dmg => {
+      mut af = 0x0180 as uint16
+      if inputs.header_checksum_byte != 0x00 as uint8 {
+        af = 0x01b0 as uint16
+      }
+      return PostBootContract {
+        cpu_registers: post_boot_cpu_registers(
+          af,
+          0x0013 as uint16,
+          0x00d8 as uint16,
+          0x014d as uint16
+        ),
+        is_boot_rom_mapped: false,
+        provenance: PostBootStateProvenance.pan_docs_dmg_handoff,
+        cgb_compatibility_boot_input: inputs.cgb_compatibility_boot_input
+      }
+    }
+    ProfileIdentity.cgb_d_cgb => {
+      return PostBootContract {
+        cpu_registers: post_boot_cpu_registers(
+          0x1180 as uint16,
+          0x0000 as uint16,
+          0xff56 as uint16,
+          0x000d as uint16
+        ),
+        is_boot_rom_mapped: false,
+        provenance: PostBootStateProvenance.pan_docs_cgb_handoff,
+        cgb_compatibility_boot_input: inputs.cgb_compatibility_boot_input
+      }
+    }
+    ProfileIdentity.cgb_d_dmg_compat => {
+      mut bc = 0x0000 as uint16
+      if inputs.is_nintendo_licensee {
+        bc = (inputs.title_byte_sum as uint16) * (0x0100 as uint16)
+      }
+      mut hl = 0x007c as uint16
+      if bc == 0x4300 as uint16 || bc == 0x5800 as uint16 {
+        hl = 0x991a as uint16
+      }
+      return PostBootContract {
+        cpu_registers: post_boot_cpu_registers(
+          0x1180 as uint16,
+          bc,
+          0x0008 as uint16,
+          hl
+        ),
+        is_boot_rom_mapped: false,
+        provenance: PostBootStateProvenance.pan_docs_cgb_compat_handoff,
+        cgb_compatibility_boot_input: inputs.cgb_compatibility_boot_input
+      }
+    }
+  }
+}
+
+pub fn run_configuration(
+  hardware_profile: HardwareProfile,
+  boot_policy: BootPolicy
+) -> RunConfiguration {
+  return RunConfiguration {
+    hardware_profile: hardware_profile,
+    boot_policy: boot_policy
+  }
+}
+
+pub fn select_boot_policy(
+  policy_name: str
+) -> Result[BootPolicy, BootPolicySelectionError] {
+  if policy_name == "" {
+    return Err(BootPolicySelectionError.missing_policy)
+  }
+  if policy_name == "boot-rom" {
+    return Ok(BootPolicy.user_boot_rom)
+  }
+  if policy_name == "post-boot-start" {
+    return Ok(BootPolicy.post_boot_start)
+  }
+  return Err(BootPolicySelectionError.unknown_policy)
+}
+
+pub fn select_hardware_profile(
+  profile_name: str,
+  mode_name: str,
+  cartridge_mode: CartridgeMode
+) -> Result[HardwareProfile, ProfileSelectionError] {
+  if profile_name == "" {
+    return Err(ProfileSelectionError.missing_profile)
+  }
+  if mode_name == "" {
+    return Err(ProfileSelectionError.missing_mode)
+  }
+  if mode_name != "dmg" && mode_name != "cgb" && mode_name != "dmg-compat" {
+    return Err(ProfileSelectionError.unknown_mode)
+  }
+  if profile_name != "dmg-c" && profile_name != "cgb-d" {
+    return Err(ProfileSelectionError.unknown_profile)
+  }
+
+  if profile_name == "dmg-c" {
+    if mode_name == "dmg" {
+      return hardware_profile(
+        HardwareModel.dmg,
+        HardwareRevision.dmg_c,
+        OperatingMode.dmg,
+        cartridge_mode
+      )
+    }
+    if mode_name == "cgb" {
+      return hardware_profile(
+        HardwareModel.dmg,
+        HardwareRevision.dmg_c,
+        OperatingMode.cgb,
+        cartridge_mode
+      )
+    }
+    return hardware_profile(
+      HardwareModel.dmg,
+      HardwareRevision.dmg_c,
+      OperatingMode.cgb_dmg_compat,
+      cartridge_mode
+    )
+  }
+
+  if mode_name == "dmg" {
+    return hardware_profile(
+      HardwareModel.cgb,
+      HardwareRevision.cgb_d,
+      OperatingMode.dmg,
+      cartridge_mode
+    )
+  }
+  if mode_name == "cgb" {
+    return hardware_profile(
+      HardwareModel.cgb,
+      HardwareRevision.cgb_d,
+      OperatingMode.cgb,
+      cartridge_mode
+    )
+  }
+  return hardware_profile(
+    HardwareModel.cgb,
+    HardwareRevision.cgb_d,
+    OperatingMode.cgb_dmg_compat,
+    cartridge_mode
+  )
+}
