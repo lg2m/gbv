@@ -42,7 +42,7 @@ Each numbered tracer slice produces an observable end-to-end result and can be a
 3. **F03 — Select and specify the first DMG and CGB Hardware Profiles**
    - Blocked by: F01.
    - Covers: U2, U4, U6.
-   - Complete when CGB-D and one evidence-backed DMG revision have explicit modes, startup behavior, Boot Policy configurations, and test applicability without a generic-profile fallback.
+   - Complete when the evidence-backed DMG-C and CGB-D profiles have explicit modes, startup behavior, Boot Policy configurations, and test applicability without a generic-profile fallback.
 
 4. **F04 — Pin and run public Conformance ROMs reproducibly**
    - Blocked by: F02.

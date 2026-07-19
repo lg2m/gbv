@@ -20,10 +20,13 @@
             !(lib.elem name [
               ".direnv"
               ".git"
+              ".veyr"
               ".veyrc-dirlist"
               "_build"
               "dist"
               "gbv"
+              "gbv.ll"
+              "libgbv.a"
               "result"
             ]);
       };

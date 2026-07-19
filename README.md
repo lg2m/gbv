@@ -24,8 +24,9 @@ nix develop --impure
 scripts/check.sh
 ```
 
-`scripts/check.sh` formats-checks, builds, and runs the bootstrap executable.
-The expected output is:
+`scripts/check.sh` format-checks the package, runs the deterministic Veyr test
+suite, builds the executable, and smoke-tests it. The expected executable output
+is:
 
 ```text
 gbv bootstrap ok
